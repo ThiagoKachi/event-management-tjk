@@ -192,6 +192,7 @@ Esta separação permite:
 - Escalabilidade independente
 - Isolamento de responsabilidades
 
+<----------------------->
 - Node.js + Express
 - TypeScript
 - Prisma
