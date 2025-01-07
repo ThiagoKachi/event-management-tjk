@@ -1,5 +1,5 @@
 import 'dotenv/config';
-//
+
 import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
@@ -12,8 +12,6 @@ export const app = express();
 appRoutes(app);
 app.use(express.json());
 app.use(cors());
+app.use(contentType);
 app.use(helmet());
 app.use(limiter);
-app.use(contentType);
-
-// Error Handler

@@ -80,7 +80,7 @@ value: {
 // Eventos
 GET /events
 GET /events/:id
-POST /events (admin)
+POST /events (TODO: only admin can create)
 
 // Pedidos
 POST /orders
