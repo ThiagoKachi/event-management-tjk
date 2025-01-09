@@ -11,6 +11,11 @@ export const forbidden = (error: Error): HttpResponse => ({
   body: error
 });
 
+export const notFound = (message: string): HttpResponse => ({
+  statusCode: 404,
+  body: { message }
+});
+
 export const serverError = (error: Error): HttpResponse => ({
   statusCode: 500,
   body: new ServerError(error.stack!)
@@ -18,6 +23,11 @@ export const serverError = (error: Error): HttpResponse => ({
 
 export const ok = (data: any): HttpResponse => ({
   statusCode: 200,
+  body: data
+});
+
+export const created = (data: any): HttpResponse => ({
+  statusCode: 201,
   body: data
 });
 

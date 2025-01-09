@@ -1,8 +1,9 @@
 import { LoadEvents } from '@domain/usecases/event/load-events';
-import { ValidationErrorAdapter } from '@infra/validation/adapters/zod-error-adapter';
-import { badRequest, serverError } from '@presentation/helpers/http/http-helper';
+import { badRequest, ok } from '@presentation/helpers/http/http-helper';
 import { Controller, HttpRequest, HttpResponse } from '@presentation/protocols';
 import { LoadEventsValidator } from '@validation/validators/event/load-events-validation';
+import { handleError } from 'src/utils/error-handler';
+import { ValidationErrorAdapter } from 'src/utils/zod-error-adapter';
 
 export class LoadEventsController implements Controller {
   constructor (
@@ -21,12 +22,9 @@ export class LoadEventsController implements Controller {
 
       const events = await this.loadEvents.load(name);
 
-      return {
-        statusCode: 200,
-        body: events,
-      };
+      return ok(events);
     } catch (error) {
-      return serverError(error as Error);
+      return handleError(error as Error);
     }
   }
 }
