@@ -1,9 +1,16 @@
 import { CreateEventRepository } from '@data/protocols/db/event/create-event';
+import { LoadEventByIdRepository } from '@data/protocols/db/event/load-event-by-id';
 import { LoadEventsRepository } from '@data/protocols/db/event/load-events';
 import { EventModel } from '@domain/models/event/event';
 import { prismaClient } from '../prismaClient';
 
-export class EventPrismaRepository implements CreateEventRepository, LoadEventsRepository {
+export class EventPrismaRepository implements CreateEventRepository, LoadEventsRepository, LoadEventByIdRepository {
+  async loadById(id: string): Promise<EventModel | null> {
+    const event = await prismaClient.event.findUnique({ where: { id } });
+
+    return event;
+  }
+
   async load(name: string): Promise<EventModel[]> {
     const events = await prismaClient.event.findMany({ where: { name } });
 
