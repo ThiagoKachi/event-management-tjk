@@ -11,7 +11,7 @@ export class CreateEventValidatorAdapter implements CreateEventValidator {
     date: z.string().min(3, 'Event date is required').max(255),
     location: z.string().min(3, 'Event location is required').max(255),
     capacity: z.number().int().min(1, 'Event capacity is required'),
-    available: z.boolean().default(true),
+    available: z.number().int().min(1, 'Event available is required'),
     price: z.number().int().min(1, 'Event price is required'),
     status: z.string().min(3, 'Event status is required').max(255),
   });
