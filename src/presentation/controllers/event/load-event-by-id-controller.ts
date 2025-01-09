@@ -1,6 +1,7 @@
 import { LoadEventById } from '@domain/usecases/event/load-event-by-id';
-import { serverError } from '@presentation/helpers/http/http-helper';
+import { notFound, ok } from '@presentation/helpers/http/http-helper';
 import { Controller, HttpRequest, HttpResponse } from '@presentation/protocols';
+import { handleError } from 'src/utils/error-handler';
 
 export class LoadEventByIdController implements Controller {
   constructor (
@@ -13,12 +14,13 @@ export class LoadEventByIdController implements Controller {
 
       const event = await this.loadEventById.loadById(id);
 
-      return {
-        statusCode: 200,
-        body: event,
-      };
+      if (!event) {
+        return notFound('Event not found');
+      }
+
+      return ok(event);
     } catch (error) {
-      return serverError(error as Error);
+      return handleError(error as Error);
     }
   }
 }

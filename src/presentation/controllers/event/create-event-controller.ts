@@ -1,8 +1,9 @@
 import { CreateEvent } from '@domain/usecases/event/create-event';
-import { ValidationErrorAdapter } from '@infra/validation/adapters/zod-error-adapter';
-import { badRequest, serverError } from '@presentation/helpers/http/http-helper';
+import { badRequest, created } from '@presentation/helpers/http/http-helper';
 import { Controller, HttpRequest, HttpResponse } from '@presentation/protocols';
 import { CreateEventValidator } from '@validation/validators/event/create-event-validation';
+import { handleError } from 'src/utils/error-handler';
+import { ValidationErrorAdapter } from 'src/utils/zod-error-adapter';
 
 export class CreateEventController implements Controller {
   constructor (
@@ -21,12 +22,9 @@ export class CreateEventController implements Controller {
 
       const event = await this.createEvent.create(body);
 
-      return {
-        statusCode: 201,
-        body: event,
-      };
+      return created(event);
     } catch (error) {
-      return serverError(error as Error);
+      return handleError(error as Error);
     }
   }
 }

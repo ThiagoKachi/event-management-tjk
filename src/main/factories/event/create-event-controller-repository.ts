@@ -6,7 +6,7 @@ import { Controller } from '@presentation/protocols';
 
 export const makeCreateEventController = (): Controller => {
   const eventRepository = new EventPrismaRepository();
-  const createEvent = new DbCreateEvent(eventRepository);
+  const createEvent = new DbCreateEvent(eventRepository, eventRepository);
 
   const validator = new CreateEventValidatorAdapter();
 
