@@ -13,7 +13,7 @@ model Event {
   date      DateTime
   location  String
   capacity  Int
-  available Boolean
+  available Int
   price     Float
   status    String
 

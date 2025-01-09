@@ -4,7 +4,7 @@ export interface EventModel {
   date: Date;
   location: string;
   capacity: number;
-  available: boolean;
+  available: number;
   price: number;
   status: string;
 }
