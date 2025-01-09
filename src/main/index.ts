@@ -9,9 +9,10 @@ import { limiter } from './middlewares/rate-limit';
 
 export const app = express();
 
-appRoutes(app);
 app.use(express.json());
 app.use(cors());
 app.use(contentType);
 app.use(helmet());
 app.use(limiter);
+
+appRoutes(app);
