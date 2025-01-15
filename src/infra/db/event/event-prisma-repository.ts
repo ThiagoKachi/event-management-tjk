@@ -1,10 +1,19 @@
 import { CreateEventRepository } from '@data/protocols/db/event/create-event';
 import { LoadEventByIdRepository } from '@data/protocols/db/event/load-event-by-id';
 import { LoadEventsRepository } from '@data/protocols/db/event/load-events';
+import { UpdateAvailableTicketsRepository } from '@data/protocols/db/event/update-available-tickets';
 import { EventModel } from '@domain/models/event/event';
+import { UpdateAvailableTicketsModel } from '@domain/models/event/update-available-tickets';
 import { prismaClient } from '../prismaClient';
 
-export class EventPrismaRepository implements CreateEventRepository, LoadEventsRepository, LoadEventByIdRepository {
+export class EventPrismaRepository implements CreateEventRepository, LoadEventsRepository, LoadEventByIdRepository, UpdateAvailableTicketsRepository {
+  async updateAvailableTickets(data: UpdateAvailableTicketsModel): Promise<void> {
+    await prismaClient.event.update({
+      where: { id: data.id },
+      data: { available: { decrement: data.quantity } },
+    });
+  }
+
   async loadById(id: string): Promise<EventModel | null> {
     const event = await prismaClient.event.findUnique({ where: { id } });
 

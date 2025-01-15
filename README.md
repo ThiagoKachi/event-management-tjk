@@ -88,7 +88,7 @@ GET /orders/:id
 GET /orders/:id/ticket
 
 // Validação
-POST /tickets/validate
+POST /tickets/validate (Valida e Registra o uso do ingresso)
 
 ```
 
