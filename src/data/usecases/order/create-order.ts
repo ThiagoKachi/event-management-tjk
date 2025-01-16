@@ -27,13 +27,20 @@ export class DbCreateOrder implements CreateOrder {
 
     const totalAmount = event.price * orderBody.quantity;
 
-    // Email avisando que o pedido foi realizado e esta aguardando pagamento
 
     const order = await this.createOrderRepository.create(orderBody, totalAmount);
 
     // Decrementar a quantidade de ingressos disponíveis (Temporário)
     await this.updateAvailableTicketsRepository
       .updateAvailableTickets({ id: orderBody.eventId, quantity: orderBody.quantity });
+
+    // Email avisando que o pedido foi realizado e link de pagamento
+    // Clica no link e manda mensagem para a fila (SQS)
+    // Fila recebe os dados da Order e atualiza status para 'paid'
+    // Gera o QRCode e salva no S3
+    // Atualiza 'ticket_code' com o código
+    // Confirma a venda e decrementa no banco
+    // Envia email para o cliente com os dados do pedido e QRCode
 
     return order;
   }

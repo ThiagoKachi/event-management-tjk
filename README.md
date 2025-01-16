@@ -112,12 +112,12 @@ Quer que eu detalhe alguma parte específica desta versão simplificada?
 
 1. **Reserva Inicial**
 - Cliente seleciona evento e quantidade
-- Sistema verifica disponibilidade no Redis
-- Cria reserva temporária (15 minutos)
-- Decrementa temporariamente a quantidade disponível
+- Sistema verifica disponibilidade no (Redis)
+- Cria reserva temporária (15 minutos) (Redis)
+- Decrementa temporariamente a quantidade disponível (Redis)
 1. **Confirmação de Pagamento**
 - Cliente envia confirmação de pagamento (simulado)
-- Sistema valida se a reserva ainda existe
+- Sistema valida se a reserva ainda existe (Redis)
 - Cria uma mensagem com dados do pedido e pagamento
 - Envia essa mensagem para fila SQS
 1. **Processamento (Lambda)**
