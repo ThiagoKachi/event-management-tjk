@@ -21,10 +21,10 @@ jobs:
         cache: 'npm'
 
     - name: Install dependencies
-      uses: npm ci
+      run: npm ci
 
     - name: Linting
-      uses: npm run ci:lint
+      run: npm run ci:lint
 
     - name: Typechecking
-      uses: npm run typecheck
+      run: npm run typecheck
