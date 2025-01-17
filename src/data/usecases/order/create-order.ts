@@ -1,6 +1,7 @@
 import { LoadEventByIdRepository } from '@data/protocols/db/event/load-event-by-id';
 import { UpdateAvailableTicketsRepository } from '@data/protocols/db/event/update-available-tickets';
 import { CreateOrderRepository } from '@data/protocols/db/order/create-order';
+import { EmailSender } from '@data/protocols/email/order/confirmation-order-email';
 import { CreateOrderModel } from '@domain/models/order/create-order';
 import { OrderModel } from '@domain/models/order/order';
 import { CreateOrder } from '@domain/usecases/order/create-order';
@@ -12,6 +13,7 @@ export class DbCreateOrder implements CreateOrder {
     private readonly loadEventByIdRepository: LoadEventByIdRepository,
     private readonly updateAvailableTicketsRepository: UpdateAvailableTicketsRepository,
     private readonly createOrderRepository: CreateOrderRepository,
+    private readonly emailSender: EmailSender,
   ) {}
 
   async create(orderBody: CreateOrderModel): Promise<OrderModel> {
@@ -34,7 +36,18 @@ export class DbCreateOrder implements CreateOrder {
     await this.updateAvailableTicketsRepository
       .updateAvailableTickets({ id: orderBody.eventId, quantity: orderBody.quantity });
 
-    // Email avisando que o pedido foi realizado e link de pagamento
+    await this.emailSender.send({
+      orderId: order.id,
+      customer_email: order.customer_email,
+      event_date: new Date(event.date).toLocaleDateString('pt-BR'),
+      event_name: event.name,
+      quantity: order.quantity,
+      total_amount: new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      }).format(order.quantity * event.price)
+    });
+
     // Clica no link e manda mensagem para a fila (SQS)
     // Fila recebe os dados da Order e atualiza status para 'paid'
     // Gera o QRCode e salva no S3
