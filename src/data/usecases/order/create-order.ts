@@ -48,8 +48,8 @@ export class DbCreateOrder implements CreateOrder {
       }).format(order.quantity * event.price)
     });
 
-    // Clica no link e manda mensagem para a fila (SQS)
-    // Fila recebe os dados da Order e atualiza status para 'paid'
+    // Clica no link -> atualiza status para 'paid' e manda mensagem para a fila (SQS)
+    // Fila recebe os dados da Order
     // Gera o QRCode e salva no S3
     // Atualiza 'ticket_code' com o código
     // Confirma a venda e decrementa no banco
