@@ -1,5 +1,5 @@
 import { DbCreateOrder } from '@data/usecases/order/create-order';
-import { ExternalEmailServiceAdapter } from '@infra/aws/email/confirmation-order-email';
+import { ExternalEmailServiceAdapter } from '@infra/aws/email/send-email';
 import { EventPrismaRepository } from '@infra/db/event/event-prisma-repository';
 import { OrderPrismaRepository } from '@infra/db/order/order-prisma-repository';
 import { CreateOrderValidatorAdapter } from '@infra/validation/order/create-order-validation-adapter';
