@@ -7,7 +7,7 @@ import { prismaClient } from '../prismaClient';
 
 export class OrderPrismaRepository implements CreateOrderRepository, ChangeOrderStatusRepository, LoadOrderByIdRepository {
   async loadById(orderId: string): Promise<OrderModel | null> {
-    const order = await prismaClient.order.findUnique({ where: { id: orderId } });
+    const order = await prismaClient.order.findFirst({ where: { id: orderId } });
 
     return order && { ...order, created_at: order.created_at.toISOString() };
   }

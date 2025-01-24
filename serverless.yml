@@ -1,0 +1,36 @@
+# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+org: thikachi
+# "service" is the name of this project. This will also be added to your AWS resource names.
+service: process-order
+
+package:
+  individually: true
+  patterns:
+    - "!node_modules/.prisma/**"
+    - "node_modules/.prisma/client/**"
+    - "node_modules/@prisma/client/**"
+    - "prisma/**"
+    - "dist/**"
+
+plugins:
+  - serverless-dotenv-plugin
+  - serverless-offline
+
+build:
+  esbuild:
+    bundle: true
+    minify: true
+    sourcemap: true
+    exclude:
+      - '@aws-sdk/*'
+    target: node20
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+
+functions:
+  processOrder:
+      handler: src/infra/aws/functions/handler.sqsHandler
+      events:
+        - sqs: arn:aws:sqs:us-east-1:891376909034:process-order-queue

@@ -1,3 +1,3 @@
 export interface ProcessOrder {
-  orderInfo(orderId: string, status: string): Promise<void>;
+  process(orderId: string): Promise<void>;
 }

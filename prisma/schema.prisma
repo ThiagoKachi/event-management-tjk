@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
@@ -29,7 +30,7 @@ model Order {
   quantity       Int
   total_amount   Float
   status         String
-  ticket_code    String
+  ticket_status  String   @default("pending")
   created_at     DateTime @default(now())
 
   event_id Event    @relation(fields: [eventId], references: [id])

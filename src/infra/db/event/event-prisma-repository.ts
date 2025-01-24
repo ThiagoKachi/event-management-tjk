@@ -15,7 +15,7 @@ export class EventPrismaRepository implements CreateEventRepository, LoadEventsR
   }
 
   async loadById(id: string): Promise<EventModel | null> {
-    const event = await prismaClient.event.findUnique({ where: { id } });
+    const event = await prismaClient.event.findFirst({ where: { id } });
 
     return event;
   }

@@ -13,7 +13,6 @@ export const makeCreateOrderController = (): Controller => {
   const emailServiceAdapter = new ExternalEmailServiceAdapter(EMAIL_URL!);
   const createOrder = new DbCreateOrder(
     eventRepository,
-    eventRepository,
     orderRepository,
     emailServiceAdapter
   );
