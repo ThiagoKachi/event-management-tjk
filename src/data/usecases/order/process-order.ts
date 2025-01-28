@@ -1,5 +1,6 @@
 import { UpdateAvailableTicketsRepository } from '@data/protocols/db/event/update-available-tickets';
 import { LoadOrderByIdRepository } from '@data/protocols/db/order/load-order-by-id';
+import { UploadImageRepository } from '@data/protocols/images/upload-image';
 import { GenerateQRCodeImage } from '@data/protocols/QRCode/generate-image';
 import { ProcessOrder } from '@domain/usecases/order/process-order';
 import { NotFoundError } from '@presentation/errors/not-found-error';
@@ -10,6 +11,7 @@ export class DbProcessOrder implements ProcessOrder {
     private readonly loadOrderByIdRepository: LoadOrderByIdRepository,
     private readonly updateAvailableTicketsRepository: UpdateAvailableTicketsRepository,
     private readonly generateQRCodeImage: GenerateQRCodeImage,
+    private readonly uploadImageRepository: UploadImageRepository,
   ) {}
 
   async process(orderId: string): Promise<void> {
@@ -26,7 +28,7 @@ export class DbProcessOrder implements ProcessOrder {
     const qrCodeImage = await this.generateQRCodeImage
       .generateImage(`${process.env.APPLICATION_URL}/${order.id}`);
 
-    console.log(qrCodeImage, 'Manda pro S3');
+    await this.uploadImageRepository.upload({ file: qrCodeImage });
 
     await this.updateAvailableTicketsRepository
       .updateAvailableTickets({ id: order?.eventId, quantity: order?.quantity });
@@ -36,7 +38,7 @@ export class DbProcessOrder implements ProcessOrder {
 // Fazer useCase "process-order", recebe o orderId ✅
 // Verifica se foi paga ✅
 // Se sim: Gera o QRCode ✅
-// Salva no S3
+// Salva no S3 ✅
 // Confirma a venda e decrementa no banco ✅
 // Envia email para o cliente com os dados do pedido e QRCode
 
