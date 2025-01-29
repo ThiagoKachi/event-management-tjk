@@ -14,7 +14,6 @@ package:
 
 plugins:
   - serverless-dotenv-plugin
-  - serverless-offline
 
 build:
   esbuild:
