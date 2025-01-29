@@ -6,6 +6,8 @@ import { UploadImageRepository } from '@data/protocols/images/upload-image';
 import { GenerateQRCodeImage } from '@data/protocols/QRCode/generate-image';
 import { EventModel } from '@domain/models/event/event';
 import { ProcessOrder } from '@domain/usecases/order/process-order';
+import { ServerError } from '@presentation/errors';
+import { ConflictError } from '@presentation/errors/conflict-error';
 import { NotFoundError } from '@presentation/errors/not-found-error';
 import { PaymentRequiredError } from '@presentation/errors/payment-required-error';
 
@@ -20,6 +22,10 @@ export class DbProcessOrder implements ProcessOrder {
   ) {}
 
   async process(orderId: string): Promise<void> {
+    if (!process.env.APPLICATION_URL) {
+      throw new ServerError('APPLICATION_URL environment variable is required');
+    }
+
     const order = await this.loadOrderByIdRepository.loadById(orderId);
 
     if (!order) {
@@ -30,7 +36,15 @@ export class DbProcessOrder implements ProcessOrder {
       throw new PaymentRequiredError('The order must be paid to be processed.');
     }
 
+    if (order.ticket_status === 'used') {
+      throw new ConflictError('The order is already been used.');
+    }
+
     const event = await this.loadEventByIdRepository.loadById(order.eventId) as EventModel;
+
+    if (!event) {
+      throw new NotFoundError('Event not found.');
+    }
 
     const qrCodeImage = await this.generateQRCodeImage
       .generateImage(`${process.env.APPLICATION_URL}/${order.id}`);
@@ -38,26 +52,29 @@ export class DbProcessOrder implements ProcessOrder {
     await this.uploadImageRepository
       .upload({ file: qrCodeImage, filename: `${order.id}.png` });
 
-    await this.updateAvailableTicketsRepository
-      .updateAvailableTickets({ id: order?.eventId, quantity: order?.quantity });
+    await Promise.all([
+      // Tudo certo: Refaz o cache do REDIS com o valor atualizado
+      this.updateAvailableTicketsRepository
+        .updateAvailableTickets({ id: order?.eventId, quantity: order?.quantity }),
 
-    await this.successOrderEmailSender.send({
-      order_id: order.id,
-      customer_email: order.customer_email,
-      event_date: new Date(event.date).toLocaleDateString('pt-BR'),
-      event_name: event.name,
-      event_location: event.location,
-      quantity: order.quantity,
-      total_amount: new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL',
-      }).format(order.quantity * event.price),
-    });
+      await this.successOrderEmailSender.send({
+        order_id: order.id,
+        customer_email: order.customer_email,
+        event_date: new Date(event.date).toLocaleDateString('pt-BR'),
+        event_name: event.name,
+        event_location: event.location,
+        quantity: order.quantity,
+        total_amount: new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL',
+        }).format(order.quantity * event.price),
+      })
+    ]);
+
   }
 }
 
-// Mudar "ticket_code" para "ticket_status" e quando ler o QRCode, mudar para "used"
-// Separar em lambas menores (Processar a order, Gerar QRCode e Salvar no S3, Enviar email)
 // Cache com Redis
-// Gateway de pagamento
 // Fazer ingressos nominais e gerar um QRCode por ingresso
+// Gateway de pagamento *
+// Migrar para o knex *

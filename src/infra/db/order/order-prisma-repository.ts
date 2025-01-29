@@ -1,11 +1,17 @@
 import { ChangeOrderStatusRepository } from '@data/protocols/db/order/change-order-status';
+import { ChangeTicketStatusRepository } from '@data/protocols/db/order/change-ticket-status';
 import { CreateOrderRepository } from '@data/protocols/db/order/create-order';
 import { LoadOrderByIdRepository } from '@data/protocols/db/order/load-order-by-id';
 import { CreateOrderModel } from '@domain/models/order/create-order';
 import { OrderModel } from '@domain/models/order/order';
 import { prismaClient } from '../prismaClient';
 
-export class OrderPrismaRepository implements CreateOrderRepository, ChangeOrderStatusRepository, LoadOrderByIdRepository {
+export class OrderPrismaRepository implements CreateOrderRepository, ChangeOrderStatusRepository, LoadOrderByIdRepository, ChangeTicketStatusRepository {
+  async changeTicketStatus(orderId: string): Promise<void> {
+    await prismaClient.order
+      .update({ where: { id: orderId }, data: { ticket_status: 'used' } });
+  }
+
   async loadById(orderId: string): Promise<OrderModel | null> {
     const order = await prismaClient.order.findFirst({ where: { id: orderId } });
 

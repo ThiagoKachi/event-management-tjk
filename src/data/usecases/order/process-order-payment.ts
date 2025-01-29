@@ -23,6 +23,12 @@ export class DbProcessOrderPayment implements ProcessOrderPayment {
       throw new ConflictError('The order is already been paid.');
     }
 
+    if (order.ticket_status === 'used') {
+      throw new ConflictError('The order is already been used.');
+    }
+
+    // Se der algum erro, vai voltar o cache do REDIS
+
     await this.changeOrderStatusRepository.changeStatus(orderId, status);
 
     await this.sendToQueueRepository.send({ orderId });
