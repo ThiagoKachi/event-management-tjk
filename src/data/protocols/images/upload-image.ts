@@ -1,3 +1,3 @@
 export interface UploadImageRepository {
-  upload(image: { file: File }): Promise<void>
+  upload(image: { file: Buffer, filename: string }): Promise<void>
 }

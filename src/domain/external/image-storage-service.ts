@@ -1,3 +1,3 @@
 export interface ImageStorageService {
-  upload<T>(payload: unknown): Promise<T>;
+  upload<T>(payload: unknown, fileName?: string): Promise<T>;
 }

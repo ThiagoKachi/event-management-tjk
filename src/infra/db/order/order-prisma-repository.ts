@@ -21,7 +21,7 @@ export class OrderPrismaRepository implements CreateOrderRepository, ChangeOrder
       data: {
         ...orderData,
         status: 'pending',
-        ticket_code: '',
+        ticket_status: 'available',
         total_amount: total,
       },
     });
