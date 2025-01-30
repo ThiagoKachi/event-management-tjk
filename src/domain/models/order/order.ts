@@ -5,6 +5,6 @@ export interface OrderModel {
   quantity: number;
   total_amount: number;
   status: string;
-  ticket_code: string;
+  ticket_status: string;
   created_at: string;
 }

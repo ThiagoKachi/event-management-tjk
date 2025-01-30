@@ -1,25 +1,80 @@
-import { ChangeOrderStatusRepository } from '@data/protocols/db/order/change-order-status';
+import { LoadEventByIdRepository } from '@data/protocols/db/event/load-event-by-id';
+import { UpdateAvailableTicketsRepository } from '@data/protocols/db/event/update-available-tickets';
 import { LoadOrderByIdRepository } from '@data/protocols/db/order/load-order-by-id';
-import { SendToQueueRepository } from '@data/protocols/queue/order/send-order-to-queue';
+import { SuccessOrderEmailSender } from '@data/protocols/email/order/success-order-email';
+import { UploadImageRepository } from '@data/protocols/images/upload-image';
+import { GenerateQRCodeImage } from '@data/protocols/QRCode/generate-image';
+import { EventModel } from '@domain/models/event/event';
 import { ProcessOrder } from '@domain/usecases/order/process-order';
+import { ServerError } from '@presentation/errors';
 import { ConflictError } from '@presentation/errors/conflict-error';
+import { NotFoundError } from '@presentation/errors/not-found-error';
+import { PaymentRequiredError } from '@presentation/errors/payment-required-error';
 
 export class DbProcessOrder implements ProcessOrder {
   constructor(
-    private readonly changeOrderStatusRepository: ChangeOrderStatusRepository,
     private readonly loadOrderByIdRepository: LoadOrderByIdRepository,
-    private readonly sendToQueueRepository: SendToQueueRepository,
+    private readonly loadEventByIdRepository: LoadEventByIdRepository,
+    private readonly updateAvailableTicketsRepository: UpdateAvailableTicketsRepository,
+    private readonly generateQRCodeImage: GenerateQRCodeImage,
+    private readonly uploadImageRepository: UploadImageRepository,
+    private readonly successOrderEmailSender: SuccessOrderEmailSender,
   ) {}
 
-  async orderInfo(orderId: string, status: string): Promise<void> {
-    const order = await this.loadOrderByIdRepository.loadById(orderId);
-
-    if (order && order.status === 'paid') {
-      throw new ConflictError('The order is already been paid.');
+  async process(orderId: string): Promise<void> {
+    if (!process.env.APPLICATION_URL) {
+      throw new ServerError('APPLICATION_URL environment variable is required');
     }
 
-    await this.changeOrderStatusRepository.changeStatus(orderId, status);
+    const order = await this.loadOrderByIdRepository.loadById(orderId);
 
-    await this.sendToQueueRepository.send({ orderId });
+    if (!order) {
+      throw new NotFoundError('Order not found.');
+    }
+
+    if (order.status !== 'paid') {
+      throw new PaymentRequiredError('The order must be paid to be processed.');
+    }
+
+    if (order.ticket_status === 'used') {
+      throw new ConflictError('The order is already been used.');
+    }
+
+    const event = await this.loadEventByIdRepository.loadById(order.eventId) as EventModel;
+
+    if (!event) {
+      throw new NotFoundError('Event not found.');
+    }
+
+    const qrCodeImage = await this.generateQRCodeImage
+      .generateImage(`${process.env.APPLICATION_URL}/${order.id}`);
+
+    await this.uploadImageRepository
+      .upload({ file: qrCodeImage, filename: `${order.id}.png` });
+
+    await Promise.all([
+      // Tudo certo: Refaz o cache do REDIS com o valor atualizado
+      this.updateAvailableTicketsRepository
+        .updateAvailableTickets({ id: order?.eventId, quantity: order?.quantity }),
+
+      await this.successOrderEmailSender.send({
+        order_id: order.id,
+        customer_email: order.customer_email,
+        event_date: new Date(event.date).toLocaleDateString('pt-BR'),
+        event_name: event.name,
+        event_location: event.location,
+        quantity: order.quantity,
+        total_amount: new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL',
+        }).format(order.quantity * event.price),
+      })
+    ]);
+
   }
 }
+
+// Cache com Redis
+// Fazer ingressos nominais e gerar um QRCode por ingresso
+// Gateway de pagamento *
+// Migrar para o knex *
