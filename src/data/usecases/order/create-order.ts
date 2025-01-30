@@ -1,3 +1,4 @@
+import { SaveCache } from '@data/protocols/cache/save-cache';
 import { LoadEventByIdRepository } from '@data/protocols/db/event/load-event-by-id';
 import { CreateOrderRepository } from '@data/protocols/db/order/create-order';
 import { EmailSender } from '@data/protocols/email/order/confirmation-order-email';
@@ -12,6 +13,7 @@ export class DbCreateOrder implements CreateOrder {
     private readonly loadEventByIdRepository: LoadEventByIdRepository,
     private readonly createOrderRepository: CreateOrderRepository,
     private readonly emailSender: EmailSender,
+    private readonly saveCache: SaveCache,
   ) {}
 
   async create(orderBody: CreateOrderModel): Promise<OrderModel> {
@@ -27,10 +29,13 @@ export class DbCreateOrder implements CreateOrder {
 
     const totalAmount = event.price * orderBody.quantity;
 
-
     const order = await this.createOrderRepository.create(orderBody, totalAmount);
 
+    // Fazer a consulta de quantidade pelo Redis
     // Decrementar a quantidade de ingressos disponíveis pelo REDIS (Temporário)
+    // Quando criar o event, coloca a quantidade de ingressos disponíveis no REDIS
+
+    await this.saveCache.save(`available_tickets:${event.id}`, event.available - orderBody.quantity);
 
     await this.emailSender.send({
       orderId: order.id,

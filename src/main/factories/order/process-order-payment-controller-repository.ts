@@ -9,7 +9,11 @@ export const makeProcessOrderPaymentController = (): Controller => {
   const sendToQueueServiceAdapter = new SendToQueueServiceAdapter(PRODUCER_QUEUE_LAMBDA_URL!);
 
   const orderRepository = new OrderPrismaRepository();
-  const changeOrderStatus = new DbProcessOrderPayment(orderRepository, orderRepository, sendToQueueServiceAdapter);
+  const changeOrderStatus = new DbProcessOrderPayment(
+    orderRepository,
+    orderRepository,
+    sendToQueueServiceAdapter,
+  );
 
   return new ProcessOrderPaymentController(changeOrderStatus);
 };
