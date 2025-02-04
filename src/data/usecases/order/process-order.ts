@@ -93,7 +93,3 @@ export class DbProcessOrder implements ProcessOrder {
     }
   }
 }
-
-// Fazer ingressos nominais e gerar um QRCode por ingresso
-// Gateway de pagamento *
-// Migrar para o knex *
