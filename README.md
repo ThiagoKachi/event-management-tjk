@@ -5,65 +5,7 @@
 3. Geração de ingresso (QR Code)
 4. Validação de ingresso
 
-### Estrutura Simplificada:
-
-**1. Modelagem de Dados (Postgres)**
-
-```jsx
-events
-- id
-- name
-- date
-- location
-- capacity
-- available
-- price
-- status
-
-orders
-- id
-- event_id (FK)
-- customer_email
-- quantity
-- total_amount
-- status
-- ticket_code
-- created_at
-
-tickets
-- id
-- order_id (FK)
-- qr_code
-- status
-- validation_date
-
-```
-
-**2. Serviços AWS**
-
-- S3: Armazenar QR Codes dos ingressos
-- SQS: Fila de processamento de pagamentos
-- Lambda: Geração de QR Code após pagamento
-
-**3. Cache (Redis)**
-Apenas dois casos essenciais:
-
-```jsx
-// Disponibilidade de ingressos
-key: `event:${eventId}:available`
-value: number
-
-// Reservas temporárias
-key: `reservation:${orderId}`
-value: {
-  eventId,
-  quantity,
-  expiresAt
-}
-
-```
-
-**4. Fluxo Principal:**
+**. Fluxo Principal:**
 
 1. Cliente seleciona evento e quantidade
 2. Sistema faz reserva temporária (Redis)
@@ -74,7 +16,7 @@ value: {
     - Salva no S3
     - Envia email
 
-**5. API Endpoints Básicos:**
+**. API Endpoints Básicos:**
 
 ```jsx
 // Eventos
@@ -91,22 +33,6 @@ GET /orders/:id/ticket
 POST /tickets/validate (Valida e Registra o uso do ingresso)
 
 ```
-
-**6. Tratamento de Erros Básico:**
-
-- Evento lotado
-- Pagamento recusado
-- Reserva expirada
-
-Esta versão reduzida:
-
-- Mantém as funcionalidades essenciais
-- Usa menos recursos AWS
-- Tem menos complexidade
-- É mais fácil de manter
-- Pode ser expandida posteriormente
-
-Quer que eu detalhe alguma parte específica desta versão simplificada?
 
 ### Fluxo principal da aplicação de forma simples:
 
@@ -138,14 +64,6 @@ Quer que eu detalhe alguma parte específica desta versão simplificada?
 - Sistema é assíncrono para melhor performance
 - Reserva temporária evita overselling
 - Sem integração real com gateway de pagamento
-
-É um fluxo simplificado mas que permite entender e praticar:
-
-- Uso de filas (SQS)
-- Cache (Redis)
-- Funções serverless (Lambda)
-- Storage (S3)
-- Processamento assíncrono
 
 ### Aplicação Node (API Principal)
 
@@ -184,20 +102,12 @@ Quer que eu detalhe alguma parte específica desta versão simplificada?
 - Verifica autenticidade do QR Code
 - Registra uso do ingresso
 
-Esta separação permite:
-
-- API principal lida com operações em tempo real
-- Lambdas processam tarefas assíncronas/demoradas
-- Melhor gestão de recursos
-- Escalabilidade independente
-- Isolamento de responsabilidades
-
-<----------------------->
+### Tecnologias utilizadas:
 - Node.js + Express
 - TypeScript
 - Prisma
 - Redis (ioredis)
-- Jest
 - Docker
 - ESLint + Prettier
 - Zod
+- AWS (SQS, SES, Lambda, S3)
