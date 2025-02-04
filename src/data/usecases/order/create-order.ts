@@ -1,4 +1,4 @@
-import { SaveCache } from '@data/protocols/cache/save-cache';
+import { RecoverCache, SaveCache } from '@data/protocols/cache';
 import { LoadEventByIdRepository } from '@data/protocols/db/event/load-event-by-id';
 import { CreateOrderRepository } from '@data/protocols/db/order/create-order';
 import { EmailSender } from '@data/protocols/email/order/confirmation-order-email';
@@ -14,6 +14,7 @@ export class DbCreateOrder implements CreateOrder {
     private readonly createOrderRepository: CreateOrderRepository,
     private readonly emailSender: EmailSender,
     private readonly saveCache: SaveCache,
+    private readonly recoverCache: RecoverCache,
   ) {}
 
   async create(orderBody: CreateOrderModel): Promise<OrderModel> {
@@ -23,19 +24,25 @@ export class DbCreateOrder implements CreateOrder {
       throw new NotFoundError('Event not found');
     }
 
-    if (event.available < orderBody.quantity) {
-      throw new ConflictError(`Only ${event.available} tickets available`);
+    let availableTickets = await this.recoverCache
+      .recover(`available_tickets:${event.id}`) as number;
+
+    if (!availableTickets) {
+      availableTickets = event.available;
+      await this.saveCache
+        .save(`available_tickets:${event.id}`, event.available, 900);
+    }
+
+    if (availableTickets < orderBody.quantity) {
+      throw new ConflictError(`Only ${availableTickets} tickets available`);
     }
 
     const totalAmount = event.price * orderBody.quantity;
 
     const order = await this.createOrderRepository.create(orderBody, totalAmount);
 
-    // Fazer a consulta de quantidade pelo Redis
-    // Decrementar a quantidade de ingressos disponíveis pelo REDIS (Temporário)
-    // Quando criar o event, coloca a quantidade de ingressos disponíveis no REDIS
-
-    await this.saveCache.save(`available_tickets:${event.id}`, event.available - orderBody.quantity);
+    await this.saveCache
+      .save(`available_tickets:${event.id}`, availableTickets - orderBody.quantity, 900);
 
     await this.emailSender.send({
       orderId: order.id,

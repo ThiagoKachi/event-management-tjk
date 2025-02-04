@@ -1,6 +1,8 @@
+import { SaveCache } from '@data/protocols/cache';
 import { LoadEventByIdRepository } from '@data/protocols/db/event/load-event-by-id';
 import { UpdateAvailableTicketsRepository } from '@data/protocols/db/event/update-available-tickets';
 import { LoadOrderByIdRepository } from '@data/protocols/db/order/load-order-by-id';
+import { ErrorFeedbackEmailSender } from '@data/protocols/email/order/error-feedback-order-email';
 import { SuccessOrderEmailSender } from '@data/protocols/email/order/success-order-email';
 import { UploadImageRepository } from '@data/protocols/images/upload-image';
 import { GenerateQRCodeImage } from '@data/protocols/QRCode/generate-image';
@@ -19,6 +21,8 @@ export class DbProcessOrder implements ProcessOrder {
     private readonly generateQRCodeImage: GenerateQRCodeImage,
     private readonly uploadImageRepository: UploadImageRepository,
     private readonly successOrderEmailSender: SuccessOrderEmailSender,
+    private readonly saveCache: SaveCache,
+    private readonly errorFeedbackEmailSender: ErrorFeedbackEmailSender,
   ) {}
 
   async process(orderId: string): Promise<void> {
@@ -46,35 +50,50 @@ export class DbProcessOrder implements ProcessOrder {
       throw new NotFoundError('Event not found.');
     }
 
-    const qrCodeImage = await this.generateQRCodeImage
-      .generateImage(`${process.env.APPLICATION_URL}/${order.id}`);
+    try {
+      const qrCodeImage = await this.generateQRCodeImage
+        .generateImage(`${process.env.APPLICATION_URL}/${order.id}`);
 
-    await this.uploadImageRepository
-      .upload({ file: qrCodeImage, filename: `${order.id}.png` });
+      await this.uploadImageRepository
+        .upload({ file: qrCodeImage, filename: `${order.id}.png` });
 
-    await Promise.all([
-      // Tudo certo: Refaz o cache do REDIS com o valor atualizado
-      this.updateAvailableTicketsRepository
-        .updateAvailableTickets({ id: order?.eventId, quantity: order?.quantity }),
+      await Promise.all([
+        this.updateAvailableTicketsRepository
+          .updateAvailableTickets({ id: order?.eventId, quantity: order?.quantity }),
 
-      await this.successOrderEmailSender.send({
-        order_id: order.id,
+        await this.successOrderEmailSender.send({
+          order_id: order.id,
+          customer_email: order.customer_email,
+          event_date: new Date(event.date).toLocaleDateString('pt-BR'),
+          event_name: event.name,
+          event_location: event.location,
+          quantity: order.quantity,
+          total_amount: new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL',
+          }).format(order.quantity * event.price),
+        })
+      ]);
+    } catch (error) {
+      await this.errorFeedbackEmailSender.send({
+        orderId: order.id,
         customer_email: order.customer_email,
-        event_date: new Date(event.date).toLocaleDateString('pt-BR'),
-        event_name: event.name,
-        event_location: event.location,
-        quantity: order.quantity,
-        total_amount: new Intl.NumberFormat('pt-BR', {
-          style: 'currency',
-          currency: 'BRL',
-        }).format(order.quantity * event.price),
-      })
-    ]);
+      });
 
+      const event = await this.loadEventByIdRepository.loadById(order.eventId);
+
+      if (!event) {
+        throw new NotFoundError('Event not found.');
+      }
+
+      await this.saveCache
+        .save(`available_tickets:${event.id}`, event.available, 900);
+
+      throw error;
+    }
   }
 }
 
-// Cache com Redis
 // Fazer ingressos nominais e gerar um QRCode por ingresso
 // Gateway de pagamento *
 // Migrar para o knex *

@@ -1,10 +1,11 @@
+import { DecrementCache } from '@data/protocols/cache';
 import { InvalidateCache } from '@data/protocols/cache/invalidate-cache';
 import { RecoverCache } from '@data/protocols/cache/recover-cache';
 import { SaveCache } from '@data/protocols/cache/save-cache';
 import { Redis as RedisClient } from 'ioredis';
 import redis from './config';
 
-class RedisCache implements InvalidateCache, RecoverCache, SaveCache {
+class RedisCache implements InvalidateCache, RecoverCache, SaveCache, DecrementCache {
   private static instance: RedisCache;
   private client!: RedisClient;
 
@@ -43,6 +44,10 @@ class RedisCache implements InvalidateCache, RecoverCache, SaveCache {
 
   public async invalidate(key: string): Promise<void> {
     await this.client.del(key);
+  }
+
+  public async decrement(key: string, quantity: number): Promise<void> {
+    await this.client.decrby(key, quantity);
   }
 }
 

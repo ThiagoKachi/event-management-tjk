@@ -14,6 +14,7 @@ const redis = new Redis({
     }
     return false;
   },
+  tls: {}
 });
 
 redis.on('error', (err) => {

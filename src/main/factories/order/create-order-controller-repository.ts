@@ -17,6 +17,7 @@ export const makeCreateOrderController = (): Controller => {
     eventRepository,
     orderRepository,
     emailServiceAdapter,
+    cache,
     cache
   );
 
