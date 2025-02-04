@@ -1,3 +1,5 @@
+import { SaveCache } from '@data/protocols/cache';
+import { LoadEventByIdRepository } from '@data/protocols/db/event/load-event-by-id';
 import { ChangeOrderStatusRepository } from '@data/protocols/db/order/change-order-status';
 import { LoadOrderByIdRepository } from '@data/protocols/db/order/load-order-by-id';
 import { SendToQueueRepository } from '@data/protocols/queue/order/send-order-to-queue';
@@ -10,6 +12,8 @@ export class DbProcessOrderPayment implements ProcessOrderPayment {
     private readonly changeOrderStatusRepository: ChangeOrderStatusRepository,
     private readonly loadOrderByIdRepository: LoadOrderByIdRepository,
     private readonly sendToQueueRepository: SendToQueueRepository,
+    private readonly loadEventByIdRepository: LoadEventByIdRepository,
+    private readonly saveCache: SaveCache,
   ) {}
 
   async orderInfo(orderId: string, status: string): Promise<void> {
@@ -27,10 +31,20 @@ export class DbProcessOrderPayment implements ProcessOrderPayment {
       throw new ConflictError('The order is already been used.');
     }
 
-    // Se der algum erro, vai voltar o cache do REDIS
+    try {
+      await this.changeOrderStatusRepository.changeStatus(orderId, status);
+      await this.sendToQueueRepository.send({ orderId });
+    } catch (error) {
+      const event = await this.loadEventByIdRepository.loadById(order.eventId);
 
-    await this.changeOrderStatusRepository.changeStatus(orderId, status);
+      if (!event) {
+        throw new NotFoundError('Event not found.');
+      }
 
-    await this.sendToQueueRepository.send({ orderId });
+      await this.saveCache
+        .save(`available_tickets:${event.id}`, event.available, 900);
+
+      throw error;
+    }
   }
 }
